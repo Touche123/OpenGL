@@ -3,6 +3,7 @@
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 #include "Shader.h"
+#include "Triangle.h"
 
 int main(int argc, char** argv) {
 	if (!glfwInit()) {
@@ -30,35 +31,20 @@ int main(int argc, char** argv) {
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 	
-	GLfloat points[] = {
-		0.0f, 0.5f, 0.0f,
-		0.5f, -0.5f, 0.0f,
-		-0.5f, -0.5f, 0.0f
-	};
 	Shader shaderManager;
 
 	GLuint vs = shaderManager.LoadShader("assets/shaders/colorShading.vert", GL_VERTEX_SHADER);
 	GLuint fs = shaderManager.LoadShader("assets/shaders/colorShading.frag", GL_FRAGMENT_SHADER);
 	GLuint shader_programme = shaderManager.CreateProgram(vs, fs);
 
-	GLuint vbo;
-	glGenBuffers(1, &vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(points), points, GL_STATIC_DRAW);
+	Triangle tri;
 
-	GLuint vao;
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
-	glEnableVertexAttribArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, vao);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glClearColor(0.6f, 0.6f, 0.8f, 1.0f);
 
-	
 	while (!glfwWindowShouldClose(window)) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glBindVertexArray(vao);
 		glUseProgram(shader_programme);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		glDrawArrays(GL_LINE_STRIP, 0, 6);
 		glfwPollEvents();
 		glfwSwapBuffers(window);
 	}
