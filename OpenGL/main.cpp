@@ -1,125 +1,69 @@
 #include <GL/glew.h>
-#include <SFML/Window.hpp>
-#include <SFML/OpenGL.hpp>
-#include <SFML/Graphics/Shader.hpp>
+#define GLFW_DLL
+#include <GLFW/glfw3.h>
+#include <stdio.h>
+#include "Shader.h"
 
-#include <iostream>
-#include <string>
-
-void initShaders(sf::Shader& shader, std::string vert, std::string frag) {
-	
-	if (!shader.loadFromFile("assets/shaders/shader.vert", "assets/shaders/shader.frag")) {
-		printf( "Couldnt load shaders. \n");
+int main(int argc, char** argv) {
+	if (!glfwInit()) {
+		fprintf(stderr, "ERROR: could not start GLFW3\n");
+		return 1;
 	}
-	else {
-		std::cout << "Shaders loaded." << std::endl;
+
+	GLFWwindow* window = glfwCreateWindow(800, 600, "OpenGL", NULL, NULL);
+	if (!window) {
+		fprintf(stderr, "ERROR: could not open window with GLFW3\n");
+		glfwTerminate();
+		return 1;
 	}
-}
+	glfwMakeContextCurrent(window);
 
-void display(sf::Window* window){
-	// clear the buffers
-	
-	glDrawArrays(GL_TRIANGLES, 0, 3);
-	// draw...
-	window->display();
-	// end the current frame (internally swaps the front and back buffers)
-}
-int main()
-{
-	// create the window
-	sf::Window window(sf::VideoMode(1600, 900), "OpenGL", sf::Style::Default, sf::ContextSettings(32));
-	window.setVerticalSyncEnabled(true);
-
-	float dt = 0.0f;
-
-	// load resources, initialize the OpenGL states, ...
-	sf::Shader shader;
-	initShaders(shader, "assets/shaders/shader.vert", "assets/shaders/shader.frag");
-	
-	shader.bind(&shader);
-	
-	GLenum err = glewInit();
-	if (GLEW_OK != err)
-	{
-		/* Problem: glewInit failed, something is seriously wrong. */
-		fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
-	}
 	glewExperimental = GL_TRUE;
+	glewInit();
 
-	GLfloat vertices[] = {
-			-1.0f, -1.0f, 0.0f, 
-			1.0f, -1.0f, 0.0f,
-			0.0f, 1.0f, 0.0f,
-	};
+	const GLubyte* renderer = glGetString(GL_RENDERER);
+	const GLubyte* version = glGetString(GL_VERSION);
 
+	printf("Renderer: %s\n", renderer);
+	printf("OpenGL version supported %s\n", version);
+
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
 	
-	GLuint vao= 0;
-	GLuint vbo = 0;
-	GLuint vPosition = 0;
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
+	GLfloat points[] = {
+		0.0f, 0.5f, 0.0f,
+		0.5f, -0.5f, 0.0f,
+		-0.5f, -0.5f, 0.0f
+	};
+	Shader shaderManager;
 
+	GLuint vs = shaderManager.LoadShader("assets/shaders/colorShading.vert", GL_VERTEX_SHADER);
+	GLuint fs = shaderManager.LoadShader("assets/shaders/colorShading.frag", GL_FRAGMENT_SHADER);
+	GLuint shader_programme = shaderManager.CreateProgram(vs, fs);
+
+	GLuint vbo;
 	glGenBuffers(1, &vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(points), points, GL_STATIC_DRAW);
 
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
+	GLuint vao;
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
 	glEnableVertexAttribArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+	glBindBuffer(GL_ARRAY_BUFFER, vao);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+
 	
-	
-	/*shader.setParameter("test", 0.0f, 0.0f, 0.0f, 1.0f);
-	shader.setParameter("offset", 0.0, 0.0);*/
-	///test
-	// run the main loop
-	bool running = true;
-	sf::Transform transform;
-	
-	
-	while (running)
-	{
-		dt += 0.05f;
-		
-		//shader.setParameter("time", dt);
-		
-		// handle events
-		sf::Event event;
-		while (window.pollEvent(event))
-		{
-			if (event.type == sf::Event::Closed)
-			{
-				// end the program
-				running = false;
-			}
-			
-			else if (event.type == sf::Event::Resized)
-			{
-				// adjust the viewport when the window is resized
-				glViewport(0, 0, event.size.width, event.size.height);
-			}
-			else if (event.type == sf::Event::KeyPressed) {
-				if (event.key.code == sf::Keyboard::F12) {
-					if (!shader.loadFromFile("assets/shaders/shader.vert", "assets/shaders/shader.frag")) {
-						std::printf("Couldnt load shaders.\n");
-					}
-					else {
-						std::printf("Shader's reloaded. \n");
-					}
-				}
-				
-			}
-			
-		}
-		
+	while (!glfwWindowShouldClose(window)) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		
-		display(&window);
-		
-		
+		glBindVertexArray(vao);
+		glUseProgram(shader_programme);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+		glfwPollEvents();
+		glfwSwapBuffers(window);
 	}
-	glDisableVertexAttribArray(0);
-	// release resources...
+
+	glfwTerminate();
 
 	return 0;
 }
